@@ -1,5 +1,56 @@
 ---
-- name: ivansible.lin_ipv6_cloudflare root action 1
-  debug:
-    msg: action 1
+- name: configure renew-ipv6-cloudflare
+  copy:
+    dest: /etc/default/renew-ipv6-cloudflare
+    content: |
+      iface="eth3"
+      email="{{ ipv6_cloudflare_email }}"
+      token="{{ ipv6_cloudflare_token }}"
+      zoneid="{{ ipv6_cloudflare_zone_id }}"
+      host="{{ ipv6_cloudflare_hostname }}"
+      recid="{{ ipv6_cloudflare_record_id }}"
+    mode: 0640
+
+- name: create renew-ipv6-cloudflare script
+  copy:
+    dest: /usr/local/sbin/renew-ipv6-cloudflare.sh
+    content: |
+      #!/bin/bash
+      . /etc/default/renew-ipv6-cloudflare
+      url="https://api.cloudflare.com/client/v4/zones/$zoneid/dns_records/$recid"
+      ipv6=$(ip -6 a s dev $iface | awk '/inet6 .* global/ {print $2}' | cut -d/ -f1)
+      if [ -n "$ipv6" ]; then
+        data='{"type":"AAAA","name":"'$host'","content":"'$ipv6'","ttl":300,"proxied":false}'
+        success=$(curl -sXPUT $url -H "X-Auth-Email: $email" -H "X-Auth-Key: $token" -H "Content-Type: application/json" -d $data | jq .success)
+        [ "$success" = "true" ] && echo "$host ok" && exit 0
+      fi
+      echo "$host error"
+      exit 1
+    mode: 0750
+
+- name: setup renew-ipv6-cloudflare service
+  copy:
+    dest: /etc/systemd/system/renew-ipv6-cloudflare.service
+    content: |
+      [Unit]
+      Description=Renew IPV6 address in  Cloudflare DNS
+      Wants=network.target
+      After=networking.service
+      Conflicts=shutdown.target
+      [Install]
+      WantedBy=multi-user.target
+      WantedBy=network-online.target
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/sbin/renew-ipv6-cloudflare.sh
+      ExecStop=/bin/true
+      RemainAfterExit=true
+    mode: 0644
+
+- name: enable renew-ipv6-cloudflare service
+  systemd:
+    name: renew-ipv6-cloudflare
+    state: started
+    enabled: yes
+    daemon_reload: yes
 ...

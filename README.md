@@ -1,8 +1,7 @@
 # ivansible.lin_ipv6_cloudflare
 
-This role performs:
- - action1;
- - action2;
+This installs a small linux bash script that detects ipv6 on a network
+inteface and updates a cloudflare dns record.
 
 
 ## Requirements
@@ -14,8 +13,12 @@ None
 
 Available variables are listed below, along with default values.
 
-    variable1: 1
-    variable2: 2
+    ipv6_cloudflare_email: user@example.com
+    ipv6_cloudflare_token: supersecret
+    ipv6_cloudflare_interface: eth0
+    ipv6_cloudflare_hostname: ipv6.example.com
+    ipv6_cloudflare_zone_id: 123
+    ipv6_cloudflare_record_id: 456
 
 
 ## Tags

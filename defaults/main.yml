@@ -1,4 +1,10 @@
 ---
 # defaults file for ivansible.lin_ipv6_cloudflare
 
+ipv6_cloudflare_email: user@example.com
+ipv6_cloudflare_token: supersecret
+ipv6_cloudflare_interface: eth0
+ipv6_cloudflare_hostname: ipv6.example.com
+ipv6_cloudflare_zone_id: 123
+ipv6_cloudflare_record_id: 456
 ...
