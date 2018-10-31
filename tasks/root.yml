@@ -1,0 +1,5 @@
+---
+- name: ivansible.lin_ipv6_cloudflare root action 1
+  debug:
+    msg: action 1
+...
