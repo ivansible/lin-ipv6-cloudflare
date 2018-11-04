@@ -1,15 +1,36 @@
 ---
+- name: add jo ppa repository
+  apt_repository:
+    repo: ppa:duggan/jo
+    codename: "{{ ansible_lsb.codename }}"
+    filename: jo
+    update_cache: yes
+  tags: lin_ipv6_cloudflare_install
+
+- name: install tools for json
+  apt:
+    name:
+      - curl
+      - jq
+      - jo
+      - ssl-cert     # for cloudflare ssl certificate
+    install_recommends: no
+  tags: lin_ipv6_cloudflare_install
+
+
 - name: configure renew-ipv6-cloudflare
   copy:
     dest: /etc/default/renew-ipv6-cloudflare
     content: |
-      iface="eth3"
-      email="{{ ipv6_cloudflare_email }}"
-      token="{{ ipv6_cloudflare_token }}"
-      zoneid="{{ ipv6_cloudflare_zone_id }}"
-      host="{{ ipv6_cloudflare_hostname }}"
-      recid="{{ ipv6_cloudflare_record_id }}"
+      IFACE="eth3"
+      EMAIL="{{ ipv6_cloudflare_email }}"
+      TOKEN="{{ ipv6_cloudflare_token }}"
+      ZONEID="{{ ipv6_cloudflare_zone_id }}"
+      HOST="{{ ipv6_cloudflare_hostname }}"
+      RECID="{{ ipv6_cloudflare_record_id }}"
     mode: 0640
+  notify: restart renew-ipv6-cloudflare service
+  tags: lin_ipv6_cloudflare_configure
 
 - name: create renew-ipv6-cloudflare script
   copy:
@@ -17,16 +38,17 @@
     content: |
       #!/bin/bash
       . /etc/default/renew-ipv6-cloudflare
-      url="https://api.cloudflare.com/client/v4/zones/$zoneid/dns_records/$recid"
-      ipv6=$(ip -6 a s dev $iface | awk '/inet6 .* global/ {print $2}' | cut -d/ -f1)
-      if [ -n "$ipv6" ]; then
-        data='{"type":"AAAA","name":"'$host'","content":"'$ipv6'","ttl":300,"proxied":false}'
-        success=$(curl -sXPUT $url -H "X-Auth-Email: $email" -H "X-Auth-Key: $token" -H "Content-Type: application/json" -d $data | jq .success)
-        [ "$success" = "true" ] && echo "$host ok" && exit 0
-      fi
-      echo "$host error"
-      exit 1
+      IP6=$(ip -6 address show dev $IFACE | awk '/inet6 .* global/ {print $2}' | cut -d/ -f1)
+      [ -z "$IP6" ] && "$HOST ipv6 not found" && exit 1
+      URL="https://api.cloudflare.com/client/v4/zones/$ZONEID/dns_records/$RECID"
+      HEADERS="-H X-Auth-Email:$EMAIL -H X-Auth-Key:$TOKEN -H Content-Type:application/json"
+      JSON=$(jo name=$HOST content=$IP6 type=AAAA ttl=300 proxied=false)
+      SUCCESS=$(curl -s -XPUT $URL --data $JSON $HEADERS | jq .success)
+      [ "$SUCCESS" != "true" ] && echo "$HOST ipv6 update error" && exit 1
+      echo "$HOST ipv6 OK" && exit 0
     mode: 0750
+  notify: restart renew-ipv6-cloudflare service
+  tags: lin_ipv6_cloudflare_configure
 
 - name: setup renew-ipv6-cloudflare service
   copy:
@@ -46,6 +68,8 @@
       ExecStop=/bin/true
       RemainAfterExit=true
     mode: 0644
+  notify: restart renew-ipv6-cloudflare service
+  tags: lin_ipv6_cloudflare_configure
 
 - name: enable renew-ipv6-cloudflare service
   systemd:
@@ -53,4 +77,5 @@
     state: started
     enabled: yes
     daemon_reload: yes
+  tags: lin_ipv6_cloudflare_configure
 ...

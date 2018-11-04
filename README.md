@@ -23,8 +23,9 @@ Available variables are listed below, along with default values.
 
 ## Tags
 
-- `role1_tag1` -- action1
-- `role1_tag2` -- action2
+- `lin_ipv6_cloudflare_all`
+- `lin_ipv6_cloudflare_install`
+- `lin_ipv6_cloudflare_configure`
 
 
 ## Dependencies

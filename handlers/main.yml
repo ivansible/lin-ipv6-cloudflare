@@ -1,2 +1,9 @@
 ---
 # handlers file for ivansible.lin_ipv6_cloudflare
+
+- name: restart renew-ipv6-cloudflare service
+  systemd:
+    name: renew-ipv6-cloudflare
+    state: restarted
+  become: yes
+...
