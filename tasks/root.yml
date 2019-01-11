@@ -2,7 +2,9 @@
 - name: add jo ppa repository
   apt_repository:
     repo: ppa:duggan/jo
-    codename: "{{ ansible_lsb.codename }}"
+    # workaround: this ppa has no bionic release, revert to xenial.
+    codename: xenial
+    #codename: "{{ ansible_lsb.codename }}"
     filename: jo
     update_cache: yes
   tags: lin_ipv6_cloudflare_install
