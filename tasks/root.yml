@@ -39,7 +39,7 @@
       #!/bin/bash
       . /etc/default/renew-ipv6-cloudflare
       IP6=$(ip -6 address show dev $IFACE | awk '/inet6 .* global/ {print $2}' | cut -d/ -f1)
-      [ -z "$IP6" ] && "$HOST ipv6 not found" && exit 1
+      [ -z "$IP6" ] && echo "$HOST ipv6 not found" && exit 1
       URL="https://api.cloudflare.com/client/v4/zones/$ZONEID/dns_records/$RECID"
       HEADERS="-H X-Auth-Email:$EMAIL -H X-Auth-Key:$TOKEN -H Content-Type:application/json"
       JSON=$(jo name=$HOST content=$IP6 type=AAAA ttl=300 proxied=false)
